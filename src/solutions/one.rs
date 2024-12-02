@@ -71,8 +71,8 @@ fn get_similarity(list1: Vec<usize>, list2: Vec<usize>) -> Result<usize, Error> 
 fn day_one_test() {
     let (list1, list2) = read_input(INPUT_FILE).unwrap();
     println!(
-        "Distance: {}",
-        get_distance(list1.clone(), list2.clone()).unwrap()
+        "--- DAY 1 ---\nDistance: {}\nSimilarity: {}",
+        get_distance(list1.clone(), list2.clone()).unwrap(),
+        get_similarity(list1, list2).unwrap()
     );
-    println!("Similarity: {}", get_similarity(list1, list2).unwrap());
 }
