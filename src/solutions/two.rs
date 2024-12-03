@@ -28,9 +28,7 @@ where
 fn validate_safety(mut report: Vec<usize>, threshold: usize) -> bool {
     let mut threshold_count = 0;
     if !report.is_sorted() {
-        // println!("{:?} -> {}", report, report.is_sorted());
         report.reverse();
-        // println!("{:?} -> {}", report, report.is_sorted());
         if !report.is_sorted() {
             threshold_count += 1;
             if threshold_count > threshold {
@@ -51,19 +49,19 @@ fn validate_safety(mut report: Vec<usize>, threshold: usize) -> bool {
                     return validate_safety(new_report, threshold - 1);
                 }
             }
+            return false;
         }
     }
     let mut lock: bool = true;
     let mut prev: usize = 0;
     for index in 0..report.len() {
+        let val = report[index];
         if lock {
             lock = false;
-            prev = report[index];
+            prev = val;
         } else {
-            let diff = report[index].abs_diff(prev);
-            // println!("{}", diff);
+            let diff = val.abs_diff(prev);
             if diff > 3 || diff == 0 {
-                // println!("{:?} -> invalid", &report);
                 threshold_count += 1;
                 if threshold_count > threshold {
                     return false;
@@ -76,18 +74,32 @@ fn validate_safety(mut report: Vec<usize>, threshold: usize) -> bool {
                     .collect();
                 return validate_safety(new_report, threshold - 1);
             }
-            prev = report[index];
+            prev = val;
         }
     }
-    // println!("{:?} -> valid", &report);
     true
 }
 
 fn get_safe_reports(reports: Vec<Vec<usize>>, threshold: usize) -> usize {
     let mut count = 0;
     for report in reports {
-        if validate_safety(report, threshold) {
+        // println!("Begin validation: {:?}", report);
+        if validate_safety(report.clone(), threshold) {
             count += 1;
+            // println!("Passes!\n------\n\n");
+        } else if threshold > 0 {
+            // println!("Fails!\nxxxxxx\n\n")
+            for index in 0..report.len() {
+                let new_report = report
+                    .iter()
+                    .enumerate()
+                    .filter(|(i, _)| *i != index)
+                    .map(|(_, x)| *x)
+                    .collect();
+                if validate_safety(new_report, threshold - 1) {
+                    count += 1;
+                }
+            }
         }
     }
     count
