@@ -83,12 +83,9 @@ fn validate_safety(mut report: Vec<usize>, threshold: usize) -> bool {
 fn get_safe_reports(reports: Vec<Vec<usize>>, threshold: usize) -> usize {
     let mut count = 0;
     for report in reports {
-        // println!("Begin validation: {:?}", report);
         if validate_safety(report.clone(), threshold) {
             count += 1;
-            // println!("Passes!\n------\n\n");
         } else if threshold > 0 {
-            // println!("Fails!\nxxxxxx\n\n")
             for index in 0..report.len() {
                 let new_report = report
                     .iter()
