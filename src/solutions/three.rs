@@ -1,35 +1,7 @@
-use std::{char, io::Read, iter::Peekable};
+use regex;
+use std::io::Read;
 
 const INPUT_FILE: &str = "./input/day-3.txt";
-
-#[derive(Debug, Clone)]
-pub enum Token {
-    Mul,
-    Number(u32),
-    Paren,
-}
-
-#[derive(Debug, Clone)]
-pub struct Node {
-    pub children: Vec<Node>,
-    pub entry: Token,
-}
-
-impl Node {
-    pub fn new() -> Node {
-        Node {
-            children: Vec::new(),
-            entry: Token::Mul,
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum LexItem {
-    Op(String),
-    Paren(char),
-    Num(u32),
-}
 
 fn read_input() -> Result<String, std::io::Error> {
     let mut infile: std::fs::File = std::fs::File::open(INPUT_FILE)?;
@@ -38,88 +10,37 @@ fn read_input() -> Result<String, std::io::Error> {
     Ok(buf)
 }
 
-fn get_number<T: Iterator<Item = char>>(c: char, iter: &mut Peekable<T>) -> u32 {
-    let mut number = c
-        .to_string()
-        .parse::<u32>()
-        .expect("The caller should have passed a digit.");
-    while let Some(Ok(num)) = iter.peek().map(|x| x.to_string().parse::<u32>()) {
-        number = number * 10 + num; // Constructing the number
-        iter.next();
+fn get_valid_statements(input: &String) -> Result<Vec<String>, std::io::Error> {
+    let re = regex::Regex::new(r"(mul\(\d{1,3},\d{1,3}\))")
+        .expect("Error: Failed to compile regular expression.");
+    let mut valid_strings: Vec<String> = vec![];
+    for (_, [value]) in re.captures_iter(input).map(|x| x.extract()) {
+        valid_strings.push(value.to_owned());
     }
-    number
+    Ok(valid_strings)
 }
 
-fn get_op<T: Iterator<Item = char>>(c: char, iter: &mut Peekable<T>) -> Option<String> {
-    let mut str = c.to_string();
-    while let Some(&c) = iter.peek() {
-        match c {
-            'a'..='z' => {
-                str = format!("{}{}", str, c);
-                iter.next();
-            }
-            _ => break,
-        }
+fn get_statements_as_ints(input: &String) -> Result<Vec<(usize, usize)>, std::io::Error> {
+    let re = regex::Regex::new(r"mul\((\d{1,3}),(\d{1,3})\)")
+        .expect("Error: Failed to compile regular expression.");
+    let mut pairs: Vec<(usize, usize)> = vec![];
+    for (_, [x, y]) in re.captures_iter(input).map(|n| n.extract()) {
+        pairs.push((
+            x.parse::<usize>().expect("Error: Bad number format."),
+            y.parse::<usize>().expect("Error: Bad number format."),
+        ));
     }
-    match str.as_str() {
-        "mul" => return Some(str),
-        _ => return None,
-    }
+    Ok(pairs)
 }
 
-fn lex(input: &String) -> Result<Vec<LexItem>, String> {
-    let mut result = Vec::new();
-
-    let mut buf = input.chars().peekable();
-    while let Some(&c) = buf.peek() {
-        match c {
-            '0'..='9' => {
-                buf.next();
-                let n = get_number(c, &mut buf);
-                result.push(LexItem::Num(n));
-            }
-            'm' => {
-                buf.next();
-                if let Some(x) = get_op(c, &mut buf) {
-                    result.push(LexItem::Op(x));
-                }
-            }
-            '(' | ')' => {
-                result.push(LexItem::Paren(c));
-                buf.next();
-            }
-            _ => {
-                buf.next();
-            }
-        }
-    }
-    println!("{:#?}", result);
-    Ok(result)
-}
-
-fn parse(input: String) -> Result<Vec<Node>, String> {
-    let tokens = lex(&input)?;
-
-    parse_expr(&tokens, 0).and_then(|(x, i)| {
-        if i == tokens.len() {
-            Ok(n)
-        } else {
-            Err("Parse Error!".to_owned())
-        }
-    })
-}
-
-fn parse_expr(input: &Vec<LexItem>, index: usize) -> Result<(Node, usize), String> {
-    // TODO: Implement
-}
-
-fn parse_mul(input: &Vec<LexItem>, index: usize) -> Result<(Node, usize), String> {
-    // TODO: Implement
+fn multiply_add(input: &Vec<(usize, usize)>) -> usize {
+    input.iter().map(|(x, y)| x * y).sum()
 }
 
 #[test]
 fn day_three_test() {
     let input = read_input().expect("Error: Unable to read input file.");
-    let lex_out = parse(&input).expect("Error: Parser failed.");
-    println!("--- Day 3 ---");
+    let pairs = get_statements_as_ints(&input).expect("Error: Parser failed.");
+    let solution = multiply_add(&pairs);
+    println!("--- Day 3 ---\nFinal sum: {:#?}", solution);
 }
