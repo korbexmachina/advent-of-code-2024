@@ -2,7 +2,6 @@ use regex;
 use std::io::Read;
 
 const INPUT_FILE: &str = "./input/day-4.txt";
-// const INPUT_FILE: &str = "./input/day-4-test.txt";
 
 #[derive(Debug, Clone)]
 struct State {
@@ -51,16 +50,10 @@ fn diagonal_search<'a>(
             .enumerate()
             .for_each(|(i, c)| up_right[index + i].push(*c));
     });
-    // println!("up_right: {:#?}", up_right); // TEST:
     up_right.iter().for_each(|line| {
         state.matches += re.find_iter(&line.iter().collect::<String>()).count();
         state.matches += re2.find_iter(&line.iter().collect::<String>()).count();
     });
-    // state.matrix.iter().enumerate().for_each(|(index, line)| {
-    //     line.iter()
-    //         .enumerate()
-    //         .for_each(|(i, c)| down_right[index.abs_diff(i)].push(*c));
-    // });
     state
         .matrix
         .iter()
@@ -71,10 +64,45 @@ fn diagonal_search<'a>(
                 .enumerate()
                 .for_each(|(i, c)| down_right[index + i].push(*c));
         });
-    // println!("down_right: {:#?}", down_right); // TEST:
     down_right.iter().for_each(|line| {
         state.matches += re.find_iter(&line.iter().collect::<String>()).count();
         state.matches += re2.find_iter(&line.iter().collect::<String>()).count();
+    });
+    Ok(state)
+}
+
+fn x_mas_search<'a>(state: &'a mut State) -> Result<&'a mut State, std::io::Error> {
+    state.matrix.iter().enumerate().for_each(|(index, line)| {
+        line.iter().enumerate().for_each(|(i, c)| {
+            // Check for the pattern any time we encounter an 'A'
+            if c == &'A'
+                && index > 1
+                && index < state.matrix.len() - 1
+                && i >= 1
+                && i < state.matrix[index].len() - 1
+            {
+                match (
+                    state.matrix[index - 1][i - 1],
+                    state.matrix[index + 1][i + 1],
+                    state.matrix[index - 1][i + 1],
+                    state.matrix[index + 1][i - 1],
+                ) {
+                    ('M', 'S', 'M', 'S') => {
+                        state.x_mas += 1;
+                    }
+                    ('S', 'M', 'S', 'M') => {
+                        state.x_mas += 1;
+                    }
+                    ('M', 'S', 'S', 'M') => {
+                        state.x_mas += 1;
+                    }
+                    ('S', 'M', 'M', 'S') => {
+                        state.x_mas += 1;
+                    }
+                    _ => {}
+                }
+            }
+        });
     });
     Ok(state)
 }
@@ -100,12 +128,16 @@ fn vertical_search<'a>(
 }
 
 #[test]
-fn day_three_test() {
+fn day_four_test() {
     let mut state = initialize_state().unwrap();
     let re = regex::Regex::new(r"XMAS").expect("Error: Failed to compile regular expression.");
     let re2 = regex::Regex::new(r"SAMX").expect("Error: Failed to compile regular expression.");
     let state = forward_search(&mut state, &re, &re2).unwrap();
     let state = vertical_search(state, &re, &re2).unwrap();
     let state = diagonal_search(state, &re, &re2).unwrap();
-    println!("--- DAY 4 ---\nMatches: {}", state.matches);
+    let state = x_mas_search(state).unwrap();
+    println!(
+        "--- DAY 4 ---\nMatches: {}\nX-mas count: {}",
+        state.matches, state.x_mas
+    );
 }
